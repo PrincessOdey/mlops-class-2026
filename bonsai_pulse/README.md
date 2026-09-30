@@ -19,9 +19,9 @@ Gemini prompt engine:
 
 | Component | What it does |
 |---|---|
-| `notebooks/01_generate_dataset.ipynb` | Generates a synthetic dataset of bonsai symptoms and their likely cause |
-| `notebooks/02_train_model.ipynb` | Trains a decision tree classifier, logs runs to MLflow, registers the best one as `champion` |
-| `notebooks/03_prompts.ipynb` | Designs and logs two Gemini prompt versions to MLflow |
+| `01_generate_dataset.ipynb` | Generates a synthetic dataset of bonsai symptoms and their likely cause |
+| `02_train_model.ipynb` | Trains a decision tree classifier, logs runs to MLflow, registers the best one as `champion` |
+| `03_prompts.ipynb` | Designs and logs two Gemini prompt versions to MLflow |
 | `api/main.py` | FastAPI service: loads the champion model from MLflow's registry, calls Gemini, exposes `/diagnose` and `/learn` |
 | `ui/index.html` | Simple browser UI hitting the API |
 | `docker/docker-compose.yml` | Runs MLflow, JupyterLab, and the API together |
