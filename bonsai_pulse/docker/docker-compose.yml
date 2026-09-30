@@ -1,0 +1,53 @@
+name: pulse
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.16.1
+    container_name: pulse_mlflow
+    ports:
+      - "5002:5000"
+    volumes:
+      - db:/mlflow/db
+      - artifacts:/mlflow/artifacts
+    environment:
+      - BACKEND_STORE_URI=sqlite:///mlflow/db/mlflow.db
+      - ARTIFACT_ROOT=/mlflow/artifacts
+      - MLFLOW_SERVER_ALLOWED_HOSTS=*
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:///mlflow/db/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+
+  jupyter:
+    image: jupyter/scipy-notebook:latest
+    container_name: pulse_jupyter
+    user: root
+    ports:
+      - "8889:8888"
+    volumes:
+      - ../:/home/jovyan/work
+      - artifacts:/mlflow/artifacts
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    command: start-notebook.sh --NotebookApp.token=''
+    depends_on:
+      - mlflow
+
+  api:
+    build:
+      context: ../api
+    container_name: pulse_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - artifacts:/mlflow/artifacts
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    depends_on:
+      - mlflow
+
+volumes:
+  db:
+  artifacts:

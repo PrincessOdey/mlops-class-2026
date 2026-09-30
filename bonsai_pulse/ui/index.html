@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BonsAI Pulse</title>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #f4f6f4;
+    color: #1e2b1e;
+    max-width: 640px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  h1 { color: #2f5233; margin-bottom: 4px; }
+  p.subtitle { color: #5a6b5a; margin-top: 0; }
+  .tabs { display: flex; gap: 8px; margin: 24px 0; }
+  .tab {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    background: #e2e8e2;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #2f5233;
+  }
+  .tab.active { background: #2f5233; color: white; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  label { display: block; margin-top: 14px; font-weight: 600; font-size: 14px; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 4px;
+    border: 1px solid #cbd5cb;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+  }
+  button {
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: #2f5233;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+  }
+  button:disabled { background: #9caa9c; cursor: default; }
+  #result {
+    margin-top: 24px;
+    padding: 18px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #dbe4db;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    display: none;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .badge.rescue { background: #fde2e2; color: #a12b2b; }
+  .badge.care_calendar { background: #e2f0e2; color: #2f5233; }
+  .badge.learn_before_buying { background: #e2e8fd; color: #2b3aa1; }
+</style>
+</head>
+<body>
+
+<h1>🌱 BonsAI Pulse</h1>
+<p class="subtitle">For sick trees, healthy routines, and total beginners.</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('tree')">I have a tree</div>
+  <div class="tab" onclick="switchTab('learn')">New to bonsai</div>
+</div>
+
+<div id="tree-panel" class="panel active">
+  <label>Species</label>
+  <input id="species" placeholder="e.g. Juniper bonsai" value="Juniper bonsai">
+
+  <label>Leaf color</label>
+  <select id="leaf_color">
+    <option value="green">Green</option>
+    <option value="pale_green">Pale green</option>
+    <option value="yellow">Yellow</option>
+    <option value="brown">Brown</option>
+  </select>
+
+  <label>Soil moisture (%)</label>
+  <input id="soil_moisture_pct" type="number" value="50">
+
+  <label>Light hours per day</label>
+  <input id="light_hours_per_day" type="number" value="6">
+
+  <label>Days since last watered</label>
+  <input id="days_since_watered" type="number" value="3">
+
+  <label>Pests sighted?</label>
+  <select id="pest_sighted">
+    <option value="0">No</option>
+    <option value="1">Yes</option>
+  </select>
+
+  <button onclick="diagnose()">Check my tree</button>
+</div>
+
+<div id="learn-panel" class="panel">
+  <label>Which species are you considering?</label>
+  <input id="learn_species" placeholder="e.g. Ficus bonsai" value="Ficus bonsai">
+
+  <button onclick="learn()">Get a beginner's guide</button>
+</div>
+
+<div id="result"></div>
+
+<script>
+const API = "http://localhost:8000";
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(tab + '-panel').classList.add('active');
+  document.getElementById('result').style.display = 'none';
+}
+
+async function diagnose() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = "Thinking...";
+
+  const payload = {
+    leaf_color: document.getElementById('leaf_color').value,
+    soil_moisture_pct: parseFloat(document.getElementById('soil_moisture_pct').value),
+    light_hours_per_day: parseFloat(document.getElementById('light_hours_per_day').value),
+    days_since_watered: parseInt(document.getElementById('days_since_watered').value),
+    pest_sighted: parseInt(document.getElementById('pest_sighted').value),
+    species: document.getElementById('species').value
+  };
+
+  try {
+    const res = await fetch(`${API}/diagnose`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    showResult(data.mode, data.diagnosis, data.advice);
+  } catch (e) {
+    showError();
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Check my tree";
+}
+
+async function learn() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = "Loading...";
+
+  const payload = { species: document.getElementById('learn_species').value };
+
+  try {
+    const res = await fetch(`${API}/learn`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    showResult(data.mode, null, data.advice);
+  } catch (e) {
+    showError();
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Get a beginner's guide";
+}
+
+function showResult(mode, diagnosis, advice) {
+  const labels = {
+    rescue: "🚨 Rescue Plan",
+    care_calendar: "🌿 Ongoing Care",
+    learn_before_buying: "📘 Beginner's Guide"
+  };
+  const box = document.getElementById('result');
+  box.style.display = 'block';
+  box.innerHTML = `<span class="badge ${mode}">${labels[mode] || mode}</span>` +
+    (diagnosis ? `<div style="margin-bottom:8px;"><strong>Diagnosis:</strong> ${diagnosis}</div>` : '') +
+    advice;
+}
+
+function showError() {
+  const box = document.getElementById('result');
+  box.style.display = 'block';
+  box.innerHTML = "Something went wrong reaching BonsAI Pulse. Make sure the API is running.";
+}
+</script>
+
+</body>
+</html>
