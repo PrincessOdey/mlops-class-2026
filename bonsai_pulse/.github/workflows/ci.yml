@@ -1,0 +1,23 @@
+name: BonsAI Pulse CI
+
+on:
+  push:
+    paths:
+      - 'bonsai_pulse/**'
+
+jobs:
+  check-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r bonsai_pulse/api/requirements.txt
+
+      - name: Check main.py imports cleanly
+        run: python -c "import ast; ast.parse(open('bonsai_pulse/api/main.py').read())"
